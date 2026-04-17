@@ -227,36 +227,36 @@ a:hover { text-decoration: underline; }
   flex-shrink: 0;
   min-width: 110px;
 }
-.news-text {
-  .news-group { margin-bottom: 2rem; }
-  .news-group:last-child { margin-bottom: 0; }
+.news-text { }
+.news-group { margin-bottom: 2rem; } 
+.news-group:last-child { margin-bottom: 0; }
 
-  .news-label {
-    font-family: var(--mono);
-    font-size: 0.68rem;
-    color: var(--fg3);
-    text-transform: lowercase;
-    letter-spacing: 0.02em;
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-  }
-  .news-label .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-    flex-shrink: 0;
-    animation: pulse 1.8s ease-in-out infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-  .news-label.upcoming { color: var(--fg3); }
-  .news-label.ongoing { color: #2a9d5c; }
-  .news-label.past { color: var(--fg3); }
+.news-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--fg3);
+  text-transform: lowercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
 }
+.news-label .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.news-label.upcoming { color: var(--fg3); }
+.news-label.ongoing { color: #2a9d5c; }
+.news-label.past { color: var(--fg3); }
+
 
 .misc-section { margin-bottom: 2.25rem; }
 .misc-section:last-child { margin-bottom: 0; }
@@ -391,13 +391,13 @@ a:hover { text-decoration: underline; }
     <div class="news-label upcoming">upcoming</div>
 
     <div class="news-item">
-      <div class="news-date">May 20, 2026</div>
-      <div class="news-text">I will be giving a talk at the Rényi Institute for high school students in AI Safety and why the field shouldn't feel out of reach</div>
+      <div class="news-date">May 21, 2026</div>
+      <div class="news-text">I will be giving a talk at the HUN-REN x NTU Singapore AI Symposium</div>
     </div>
 
     <div class="news-item">
-      <div class="news-date">May 21, 2026</div>
-      <div class="news-text">I will be giving a talk at the HUN-REN x NTU Singapore AI Symposium</div>
+      <div class="news-date">May 20, 2026</div>
+      <div class="news-text">I will be giving a talk at the Rényi Institute for high school students in AI Safety and why the field shouldn't feel out of reach</div>
     </div>
 
   </div>
@@ -453,7 +453,7 @@ a:hover { text-decoration: underline; }
       <div class="news-date">Aug 15, 2024</div>
       <div class="news-text">I won a silver medal at the International AI Olympiad in Teams in Bulgaria!</div>
     </div>
-    
+
   </div>
 </div>
 
