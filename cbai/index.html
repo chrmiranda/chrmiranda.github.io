@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function(){
       affects the in-context and isolated readouts differently.</p></div>
 
   <div class="field"><div class="label">What we measured, and where</div>
-    <p>Balanced accuracy of the cosine-difference rule at every layer, <b>one panel per user turn</b>, with all
+    <p>Accuracy of the cosine-difference rule at every layer, <b>one panel per user turn</b>, with all
       four positions overlaid: the two original single tokens (<code>t_inst</code>, <code>t_post</code>) and the
       two span averages (<code>t_inst_10</code>, <code>t_post_avg</code>). Colour is the position (instruction =
       blues, post-instruction = reds; darker = original single token, lighter = span average), so the effect of
@@ -325,6 +325,12 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <template id="exp5">
   <h2>Do period tokens carry the harm signal?</h2>
+  <div class="modelbar experiment">
+    <button class="mbtn active" data-model="8b">Llama-3-8B</button>
+    <button class="mbtn" data-model="llama70b">Llama-3.1-70B</button>
+    <button class="mbtn" data-model="qwen72b">Qwen2.5-72B</button>
+  </div>
+  <div class="modelpane" data-model="8b">
   <p class="tags"><span>Experiment 5</span><span>Multi-turn (MHJ)</span><span>Llama-3-8B</span><span>period token</span><span>in-context, all 33 layers</span></p>
 
   <div class="field"><div class="label">What we did</div>
@@ -379,11 +385,55 @@ document.addEventListener('DOMContentLoaded', function(){
       <li>Pooling scores across turns can make the period-built axis look better than t_post's own axis at
         <code>t_post</code> (a mid-layer, hidden-split bump). Per turn that reverses, so the pooled gap is a
         cross-turn score-calibration effect, not a real edge.</li>
-      <li><b>Caveats.</b> Llama-3-8B only; cluster-center readout, ground truth <code>ask_harmful</code>; period
-        centers cover about 59% (hidden) / 64% (overt) of instructions, and on overt a few conversations fall out
-        of the period cells; reliable range turns 0 to 4, deeper turns are small-n and near chance. 70B and 72B
-        pending.</li>
+      <li><b>Caveats.</b> Cluster-center readout, ground truth <code>ask_harmful</code>; period centers cover
+        about 59% (hidden) / 64% (overt) of instructions, and on overt a few conversations fall out of the period
+        cells; reliable range turns 0 to 4, deeper turns are small-n and near chance.</li>
     </ul></div>
+  </div>
+
+  <div class="modelpane" data-model="llama70b" hidden>
+    <p class="tags"><span>Experiment 5</span><span>Multi-turn (MHJ)</span><span>Llama-3.1-70B</span><span>period token</span><span>every 2nd of 81 layers</span></p>
+    <div class="field"><div class="label">What we measured, and where</div>
+      <p>Same as the 8B pane, on Llama-3.1-70B (all-position activations at every 2nd of 81 layers). One figure per
+        split; total n and period-having count per turn.</p>
+      <figure class="fig"><img src="assets/exp5_period_hidden_llama70b.png" alt="Per-turn accuracy vs layer, period-built vs native centers, hidden, 70B"><figcaption>Hidden split.</figcaption></figure>
+      <figure class="fig"><img src="assets/exp5_period_overt_llama70b.png" alt="Per-turn accuracy vs layer, period-built vs native centers, overt, 70B"><figcaption>Overt split.</figcaption></figure></div>
+    <div class="field"><div class="label">What we found</div>
+      <ul class="find">
+        <li><b>Replicates 8B, at scale and full depth.</b> A period-built axis reads harm at <code>t_inst</code>
+          about as well as t_inst's own axis across the depth (about 0.70 to 0.72 mid-to-late layers); transfer to
+          <code>t_post</code> is again weaker (a small mid-layer bump that falls off in the late layers). Period
+          coverage 59% hidden / 64% overt.</li>
+        <li><b>Computed, not the raw token.</b> At layer 0 the period-built axis is at or below chance (about 0.48
+          vs 0.63 native at <code>t_inst</code>), emerging within the first few layers. All 41 saved layers are
+          usable here.</li>
+      </ul></div>
+  </div>
+
+  <div class="modelpane" data-model="qwen72b" hidden>
+    <p class="tags"><span>Experiment 5</span><span>Multi-turn (MHJ)</span><span>Qwen2.5-72B (ChatML)</span><span>period token</span><span>every 2nd of 81 layers</span></p>
+    <div class="field"><div class="label">What we measured, and where</div>
+      <p>Same as the 8B pane, on Qwen2.5-72B (non-Llama ChatML template; all-position activations at every 2nd of
+        81 layers). One figure per split.</p>
+      <figure class="fig"><img src="assets/exp5_period_hidden_qwen72b.png" alt="Per-turn accuracy vs layer, period-built vs native centers, hidden, 72B"><figcaption>Hidden split.</figcaption></figure>
+      <figure class="fig"><img src="assets/exp5_period_overt_qwen72b.png" alt="Per-turn accuracy vs layer, period-built vs native centers, overt, 72B"><figcaption>Overt split.</figcaption></figure></div>
+    <div class="field"><div class="label">What we found</div>
+      <ul class="find">
+        <li><b>Replicates 8B in the usable range.</b> Through about layer 60, a period-built axis reads harm at
+          <code>t_inst</code> about as well as t_inst's own axis (about 0.66 to 0.69 mid-layers), with the same
+          weaker <code>t_post</code> transfer (a mid-layer bump, up to about 0.75 vs 0.71 native, the same
+          cross-turn calibration effect). Period coverage 59% hidden / 63% overt.</li>
+        <li><b>Computed, not the raw token.</b> Layer 0 is at or below chance (about 0.41 vs 0.59 native at
+          <code>t_inst</code>), emerging within the first few layers.</li>
+      </ul></div>
+    <div class="field"><div class="label">What not to over-read</div>
+      <ul class="find">
+        <li><b>Qwen's top layers are unusable here.</b> From about layer 62 to 80, every cell, including the native
+          baselines, collapses to chance. This is the cosine-difference rule degenerating on Qwen's final-layer
+          representations (large late-layer activations dominate every direction), not the period method; read only
+          up to about layer 60.</li>
+      </ul></div>
+  </div>
 </template>
 
 <template id="control1">
