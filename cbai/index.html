@@ -72,6 +72,12 @@
   .mbtn:hover{border-color:#cdd3dd; color:var(--ink)}
   .modelbar.experiment .mbtn.active{background:var(--accent); color:#fff; border-color:var(--accent)}
   .modelbar.control .mbtn.active{background:var(--ctrl); color:#fff; border-color:var(--ctrl)}
+  .metricbar{display:flex; gap:8px; margin:-10px 0 18px; flex-wrap:wrap; align-items:center}
+  .metbtn{font:inherit; font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:999px;
+    border:1px solid var(--line); background:var(--card); color:var(--muted); cursor:pointer;
+    transition:background .12s, color .12s, border-color .12s}
+  .metbtn:hover{border-color:#cdd3dd; color:var(--ink)}
+  .metbtn.active{background:var(--ink); color:#fff; border-color:var(--ink)}
   .modelpane[hidden]{display:none}
   .pending{color:var(--muted); font-size:14px}
 
@@ -106,12 +112,23 @@ document.addEventListener('DOMContentLoaded', function(){
       });
     });
   }
+  function wireMetricToggle(root){
+    // orthogonal to the model toggle: swaps [data-mv] figure blocks (f1 / acc) across all panes.
+    root.querySelectorAll('.metbtn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var mm=btn.getAttribute('data-metric');
+        root.querySelectorAll('.metbtn').forEach(function(b){ b.classList.toggle('active', b===btn); });
+        root.querySelectorAll('[data-mv]').forEach(function(el){ el.hidden=(el.getAttribute('data-mv')!==mm); });
+      });
+    });
+  }
   function openExp(id){
     var t=document.getElementById(id);
     if(!t) return;
     content.innerHTML='';
     content.appendChild(t.content.cloneNode(true));
     wireModelToggle(content);
+    wireMetricToggle(content);
     modal.hidden=false;
     document.body.style.overflow='hidden';
     modal.querySelector('.close').focus();
@@ -142,31 +159,39 @@ document.addEventListener('DOMContentLoaded', function(){
   <main class="grid">
 
     <!-- CARDS: newest first. Add each new experiment's card at the TOP of this list; data-exp must match a <template> id below. -->
+    <button class="card" data-exp="exp6">
+      <span class="badge experiment">Experiment 6</span>
+      <h3 class="card-title">How stable is Control 1's result?</h3>
+      <p class="card-sum">Control 1 did not fully reproduce the original Latent Guard numbers. We trace the gap to two
+        under-specified choices, which examples build the cluster centers and which jailbreak prompts get scored, and find
+        the reported numbers reproduce once we match the paper's recipe, within a range set by those choices.</p>
+      <span class="more">View experiment &rarr;</span>
+    </button>
+
     <button class="card" data-exp="exp5">
       <span class="badge experiment">Experiment 5</span>
-      <h3 class="card-title">Do period tokens carry the harm signal?</h3>
-      <p class="card-sum">A harm axis built at the last period (".") in the instruction reads harm at the
-        instruction-end token about as well as that token's own axis, from the early layers, and reads nothing at
-        the embeddings. The full-stop token sits on the same harm direction as the instruction end; transfer to
-        the post-instruction token is weaker.</p>
+      <h3 class="card-title">Reading the harm signal from the period tokens</h3>
+      <p class="card-sum">We build the harm/harmless cluster centers at the last period in the instruction, then
+        use them to read harm at the instruction token and the post-instruction token. The period matches the
+        instruction token's harm signal, but transfers only weakly to the post-instruction token.</p>
       <span class="more">View experiment &rarr;</span>
     </button>
 
     <button class="card" data-exp="exp4">
       <span class="badge experiment">Experiment 4</span>
-      <h3 class="card-title">Does averaging positions change the harm signal?</h3>
-      <p class="card-sum">Reading harm from an averaged span instead of a single token, on 8B / 70B / 72B, does not
-        change the decodable signal in either the in-context or isolated readout, and ctx and iso track each other.
-        The one exception is a weak single post-instruction token at 70B that averaging restores.</p>
+      <h3 class="card-title">Reading harm from an averaged span vs a single token</h3>
+      <p class="card-sum">We read harm from an averaged span of tokens instead of a single token, and ask whether
+        that changes the harm signal. It does not: averaging reads out about the same harm as a single token,
+        whether the turn is taken in isolation or in context.</p>
       <span class="more">View experiment &rarr;</span>
     </button>
 
     <button class="card" data-exp="exp3">
       <span class="badge experiment">Experiment 3</span>
-      <h3 class="card-title">Does context move the harm representation?</h3>
-      <p class="card-sum">Cluster centers built on isolated vs in-context turns are interchangeable at almost
-        every layer and turn, for both the instruction and post-instruction positions, so context does not
-        relocate the harm axis. Neither position consistently wins.</p>
+      <h3 class="card-title">Cross-evaluating harm cluster centers in isolation vs in context</h3>
+      <p class="card-sum">We build the harmful/harmless cluster centers from each turn in isolation and with the
+        context so far. We cross-apply them (isolation-built centers score in-context turns, and vice-versa) at
+        both the instruction and the post-instruction token.</p>
       <span class="more">View experiment &rarr;</span>
     </button>
 
@@ -178,21 +203,20 @@ document.addEventListener('DOMContentLoaded', function(){
       <span class="more">View experiment &rarr;</span>
     </button>
 
-    <button class="card" data-exp="control1">
-      <span class="badge control">Control 1</span>
-      <h3 class="card-title">Latent Guard: harm token vs refusal token</h3>
-      <p class="card-sum">Across templates and scales, Paper 1's Latent Guard decomposes: the correct chat
-        template collapses the instruction-token harm signal to surface harm only, while an obfuscation-robust,
-        largely refusal-independent harm signal emerges at the post-instruction token with model scale.</p>
+    <button class="card" data-exp="c1overall">
+      <span class="badge control">Control 1 &middot; overall</span>
+      <h3 class="card-title">Summarized results for Control 1's reproduction</h3>
+      <p class="card-sum">Every Control-1 run in one place: our correct- and mirror-template results next to the
+        paper's reported numbers, for easy comparison.</p>
       <span class="more">View experiment &rarr;</span>
     </button>
 
-    <button class="card" data-exp="c1overall">
-      <span class="badge control">Control 1 &middot; overall</span>
-      <h3 class="card-title">Latent Guard: template &times; scale &times; position</h3>
-      <p class="card-sum">All single-turn Latent-Guard runs in one place (8B / 70B / 72B, correct vs mirror
-        template, t_inst vs t_post). The decisive Accepted-HF column shows the template artifact and the
-        scale-emergent post-instruction signal at a glance.</p>
+    <button class="card" data-exp="control1">
+      <span class="badge control">Control 1</span>
+      <h3 class="card-title">Reproducing the original paper at the harm and refusal positions</h3>
+      <p class="card-sum">We reproduce the original paper's harm probe at the two token positions it studies: the
+        harm position and the refusal position. Doing so, we found it wrapped its prompts in the wrong chat
+        template for these models, so we compare their setup (the "mirror") against the correctly-formatted one.</p>
       <span class="more">View experiment &rarr;</span>
     </button>
 
@@ -211,12 +235,69 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 
 <!-- ===================== FULL WRITEUPS (hidden until a card is clicked) ===================== -->
+<template id="exp6">
+  <h2>How stable is Control 1's result?</h2>
+  <p class="tags"><span>Experiment 6</span><span>Single-turn</span><span>Llama-3-8B-Instruct</span><span>follow-up to Control 1</span><span>30 resampled center draws</span></p>
+
+  <div class="field"><div class="label">What we did, and why</div>
+    <p>Control 1 reproduced the original paper's harm detector but landed off the reported numbers. The detector flags a
+      prompt as harmful when <code>&Delta; = cos(h, &mu;_harmful) &minus; cos(h, &mu;_harmless) &gt; 0</code>, where the two
+      cluster centers are each the average of 100 examples. The paper builds those centers from the model's own behavior:
+      the harmful center from prompts the model refused plus harmful prompts it was jailbroken into accepting, and the
+      harmless center from prompts it accepted. We rebuilt the centers that way, then asked how much the result depends on
+      two choices the paper leaves unrecorded: which 100 examples define each center, and which prompts from each jailbreak
+      set get scored. As in Control 1's mirror run, all of this uses the chat template the paper originally shipped rather
+      than Llama-3's native one.</p>
+    <p>To see the range, we resampled the 100 center examples 30 times and report the spread, and we score each jailbreak
+      set in full rather than an arbitrary slice.</p>
+    <p>Accuracy here is the share of prompts the detector labels correctly: for harmful sets, the share flagged harmful;
+      for the harmless set, the share flagged harmless.</p></div>
+
+  <div class="field"><div class="label">What we found</div>
+    <div class="tablewrap">
+      <table>
+        <caption>Classification accuracy (percent) at the &Delta; &gt; 0 threshold, read at the instruction token. Ours is
+          the mean over 30 resampled center draws, with the min and max in parentheses. Jailbreak sets are scored on the
+          prompts that actually jailbroke the model.</caption>
+        <thead><tr><th>Latent Guard</th><th>Persuasion</th><th>Template (GPTFuzzer)</th><th>Refused HL</th><th>Accepted HF</th></tr></thead>
+        <tbody>
+          <tr class="ours"><td>Ours (mean, min to max)</td><td>62 (54 to 72)</td><td>96 (93 to 98)</td><td>68 (50 to 83)</td><td>55 (38 to 66)</td></tr>
+          <tr><td>Paper (reported)</td><td class="best">65</td><td class="best">100</td><td class="best">78.5</td><td class="best">59.3</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="find">
+      <li>Matching the paper's recipe reproduces its numbers: the reported value falls within our resampled range for
+        Persuasion, Refused-HL, and Accepted-HF, and within a few points of it for Template. In each case it sits toward
+        the upper edge of our range, so a typical draw runs a few points below the reported value.</li>
+      <li>The decisive ingredient is folding successfully-jailbroken prompts into the harmful center, which lifts the
+        reworded and complied-harm categories (the paper reports the same). Without it, Persuasion falls short of the
+        reported value.</li>
+      <li>The Template number depends heavily on which prompts are scored: on our first arbitrary slice it read about 79,
+        and on the full set about 96, because that set is a small pool of harmful requests each wrapped in many templates,
+        and a few templates are far harder than the rest.</li>
+      <li>Even with the recipe matched, the numbers move several points across resamples (Accepted-HF from 38 to 66), so a
+        single reported number is one point in a fairly wide range. Refused-HL is only 12 prompts, so its range is
+        especially wide.</li>
+    </ul></div>
+
+  <div class="field"><div class="label">Conclusion</div>
+    <p>Once the centers are built the paper's way and each jailbreak set is scored in full, the reported Latent Guard
+      numbers reproduce. But they are not fixed points: which 100 examples define the centers, and which prompts get
+      scored, move the accuracy by several points, so the headline numbers are best read as ranges rather than exact
+      values.</p></div>
+</template>
+
 <template id="exp4">
-  <h2>Does averaging positions change the harm signal? (in-context vs isolated)</h2>
+  <h2>Reading harm from an averaged span vs a single token</h2>
   <div class="modelbar experiment">
     <button class="mbtn active" data-model="8b">Llama-3-8B</button>
     <button class="mbtn" data-model="llama70b">Llama-3.1-70B</button>
     <button class="mbtn" data-model="qwen72b">Qwen2.5-72B</button>
+  </div>
+  <div class="metricbar">
+    <button class="metbtn active" data-metric="f1">F1</button>
+    <button class="metbtn" data-metric="acc">Accuracy</button>
   </div>
   <div class="modelpane" data-model="8b">
   <p class="tags"><span>Experiment 4</span><span>Multi-turn (MHJ)</span><span>Llama-3-8B</span><span>single vs averaged positions</span><span>all 33 layers</span></p>
@@ -228,7 +309,9 @@ document.addEventListener('DOMContentLoaded', function(){
       single-token vs span-average, per turn, in each readout. <code>t_inst_10</code> is the mean of the last 10
       instruction tokens; <code>t_post_avg</code> is the mean of all post-instruction scaffold tokens; the target
       is the expected <code>ask_harmful</code> label. Single-token controls through the same pipeline reproduce
-      the single-token baseline to mean |&Delta;| &asymp; 0.0003.</p></div>
+      the single-token baseline to mean |&Delta;| &asymp; 0.0003. The toggle above switches the metric:
+      <b>accuracy</b> = &frac12; &middot; (share of harmful asks scored harmful + share of harmless asks scored
+      harmless); <b>F1</b> = 2 &middot; precision &middot; recall / (precision + recall), on the harmful class.</p></div>
 
   <div class="field"><div class="label">What it checks</div>
     <p>Whether the harm signal is a property of one exact token or of the position region, and whether averaging
@@ -241,14 +324,14 @@ document.addEventListener('DOMContentLoaded', function(){
       blues, post-instruction = reds; darker = original single token, lighter = span average), so the effect of
       averaging is the dark-vs-light gap within each colour family. Line style is the readout: <b>ctx</b> (solid)
       and <b>iso</b> (dashed). One figure per split; n annotated per turn.</p>
-    <figure class="fig">
-      <img src="assets/exp4_turns_hidden_8b.png" alt="Per-turn accuracy vs layer, four positions, ctx and iso, hidden split">
-      <figcaption>Hidden split (no overtly harmful-looking turn).</figcaption>
-    </figure>
-    <figure class="fig">
-      <img src="assets/exp4_turns_overt_8b.png" alt="Per-turn accuracy vs layer, four positions, ctx and iso, overt split">
-      <figcaption>Overt split (has an overtly harmful-looking turn).</figcaption>
-    </figure></div>
+    <div data-mv="f1">
+      <figure class="fig"><img src="assets/exp4_turns_hidden_8b_f1.png" alt="Per-turn F1 vs layer, four positions, ctx and iso, hidden split"><figcaption>Hidden split (no overtly harmful-looking turn).</figcaption></figure>
+      <figure class="fig"><img src="assets/exp4_turns_overt_8b_f1.png" alt="Per-turn F1 vs layer, four positions, ctx and iso, overt split"><figcaption>Overt split (has an overtly harmful-looking turn).</figcaption></figure>
+    </div>
+    <div data-mv="acc" hidden>
+      <figure class="fig"><img src="assets/exp4_turns_hidden_8b_acc.png" alt="Per-turn accuracy vs layer, four positions, ctx and iso, hidden split"><figcaption>Hidden split (no overtly harmful-looking turn).</figcaption></figure>
+      <figure class="fig"><img src="assets/exp4_turns_overt_8b_acc.png" alt="Per-turn accuracy vs layer, four positions, ctx and iso, overt split"><figcaption>Overt split (has an overtly harmful-looking turn).</figcaption></figure>
+    </div></div>
 
   <div class="field"><div class="label">What we found</div>
     <ul class="find">
@@ -272,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function(){
       <li>The late-layer peak at the post-instruction position is an overt-plus-averaged effect; on the hidden
         split that position peaks mid-layer.</li>
       <li>The large turn-0 post-instruction advantage is a single-turn phenomenon (turn 0 = iso identical to ctx,
-        essentially Paper 1's refusal-position edge for overt harm), already present in single tokens, not a
+        essentially the original paper's refusal-position edge for overt harm), already present in single tokens, not a
         multi-turn or averaging result.</li>
       <li><b>Caveats.</b> Llama-3-8B only; cluster-center accuracy, ground truth
         <code>ask_harmful</code>; reliable range turns 2 to 4 (overt n about 87 to 121); deeper turns are small-n
@@ -286,8 +369,14 @@ document.addEventListener('DOMContentLoaded', function(){
       <p>Same as the 8B pane, on Llama-3.1-70B (all-position activations saved at every 2nd of 81 layers to
         bound storage). Single-token controls reproduce the 70B single-token baseline to mean |&Delta;| &asymp;
         0.0005, so the averaged reps are faithful.</p>
-      <figure class="fig"><img src="assets/exp4_turns_hidden_llama70b.png" alt="Per-turn accuracy vs layer, four positions, ctx and iso, hidden, 70B"><figcaption>Hidden split.</figcaption></figure>
-      <figure class="fig"><img src="assets/exp4_turns_overt_llama70b.png" alt="Per-turn accuracy vs layer, four positions, ctx and iso, overt, 70B"><figcaption>Overt split.</figcaption></figure></div>
+      <div data-mv="f1">
+        <figure class="fig"><img src="assets/exp4_turns_hidden_llama70b_f1.png" alt="Per-turn F1 vs layer, hidden, 70B"><figcaption>Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp4_turns_overt_llama70b_f1.png" alt="Per-turn F1 vs layer, overt, 70B"><figcaption>Overt split.</figcaption></figure>
+      </div>
+      <div data-mv="acc" hidden>
+        <figure class="fig"><img src="assets/exp4_turns_hidden_llama70b_acc.png" alt="Per-turn accuracy vs layer, hidden, 70B"><figcaption>Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp4_turns_overt_llama70b_acc.png" alt="Per-turn accuracy vs layer, overt, 70B"><figcaption>Overt split.</figcaption></figure>
+      </div></div>
     <div class="field"><div class="label">What we found</div>
       <ul class="find">
         <li><b>Averaging does not change the signal, at scale.</b> Span-average and single-token positions decode
@@ -307,8 +396,14 @@ document.addEventListener('DOMContentLoaded', function(){
       <p>Same as the 8B pane, on Qwen2.5-72B (non-Llama ChatML template; all-position activations at every 2nd
         of 81 layers). Single-token controls reproduce the 72B single-token baseline to mean |&Delta;| &asymp;
         0.0005 to 0.0007, so the averaged reps are faithful.</p>
-      <figure class="fig"><img src="assets/exp4_turns_hidden_qwen72b.png" alt="Per-turn accuracy vs layer, four positions, ctx and iso, hidden, 72B"><figcaption>Hidden split.</figcaption></figure>
-      <figure class="fig"><img src="assets/exp4_turns_overt_qwen72b.png" alt="Per-turn accuracy vs layer, four positions, ctx and iso, overt, 72B"><figcaption>Overt split.</figcaption></figure></div>
+      <div data-mv="f1">
+        <figure class="fig"><img src="assets/exp4_turns_hidden_qwen72b_f1.png" alt="Per-turn F1 vs layer, hidden, 72B"><figcaption>Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp4_turns_overt_qwen72b_f1.png" alt="Per-turn F1 vs layer, overt, 72B"><figcaption>Overt split.</figcaption></figure>
+      </div>
+      <div data-mv="acc" hidden>
+        <figure class="fig"><img src="assets/exp4_turns_hidden_qwen72b_acc.png" alt="Per-turn accuracy vs layer, hidden, 72B"><figcaption>Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp4_turns_overt_qwen72b_acc.png" alt="Per-turn accuracy vs layer, overt, 72B"><figcaption>Overt split.</figcaption></figure>
+      </div></div>
     <div class="field"><div class="label">What we found</div>
       <ul class="find">
         <li><b>Averaging does not change the signal, on a non-Llama template.</b> Span-average and single-token
@@ -324,11 +419,15 @@ document.addEventListener('DOMContentLoaded', function(){
 </template>
 
 <template id="exp5">
-  <h2>Do period tokens carry the harm signal?</h2>
+  <h2>Reading the harm signal from the period tokens</h2>
   <div class="modelbar experiment">
     <button class="mbtn active" data-model="8b">Llama-3-8B</button>
     <button class="mbtn" data-model="llama70b">Llama-3.1-70B</button>
     <button class="mbtn" data-model="qwen72b">Qwen2.5-72B</button>
+  </div>
+  <div class="metricbar">
+    <button class="metbtn active" data-metric="f1">F1</button>
+    <button class="metbtn" data-metric="acc">Accuracy</button>
   </div>
   <div class="modelpane" data-model="8b">
   <p class="tags"><span>Experiment 5</span><span>Multi-turn (MHJ)</span><span>Llama-3-8B</span><span>period token</span><span>in-context, all 33 layers</span></p>
@@ -340,7 +439,10 @@ document.addEventListener('DOMContentLoaded', function(){
       instruction token) and <code>t_post</code> (last post-instruction token). Per turn, per split (hidden vs
       overt), in-context reps, target = expected <code>ask_harmful</code>. Only instructions that contain a period
       contribute to the centers (about 59% hidden, 64% overt); every instruction is still scored at
-      <code>t_inst</code>/<code>t_post</code>, so evaluation coverage is full.</p></div>
+      <code>t_inst</code>/<code>t_post</code>, so evaluation coverage is full. The toggle above switches the
+      metric: <b>accuracy</b> = &frac12; &middot; (share of harmful asks scored harmful + share of harmless asks
+      scored harmless); <b>F1</b> = 2 &middot; precision &middot; recall / (precision + recall), on the harmful
+      class.</p></div>
 
   <div class="field"><div class="label">What it checks</div>
     <p>Whether the period token encodes the same harm direction the model uses at the instruction end and the
@@ -356,14 +458,14 @@ document.addEventListener('DOMContentLoaded', function(){
       (blue solid) sits against <code>t_inst&rarr;t_inst</code> (blue dashed), and <code>period&rarr;t_post</code>
       (red solid) against <code>t_post&rarr;t_post</code> (red dashed). One figure per split; total n and
       period-having count annotated per turn.</p>
-    <figure class="fig">
-      <img src="assets/exp5_period_hidden_8b.png" alt="Per-turn accuracy vs layer, period-built vs native centers, hidden split">
-      <figcaption>Hidden split (no overtly harmful-looking turn).</figcaption>
-    </figure>
-    <figure class="fig">
-      <img src="assets/exp5_period_overt_8b.png" alt="Per-turn accuracy vs layer, period-built vs native centers, overt split">
-      <figcaption>Overt split (has an overtly harmful-looking turn).</figcaption>
-    </figure></div>
+    <div data-mv="f1">
+      <figure class="fig"><img src="assets/exp5_period_hidden_8b_f1.png" alt="Per-turn F1 vs layer, period-built vs native centers, hidden split"><figcaption>Hidden split (no overtly harmful-looking turn).</figcaption></figure>
+      <figure class="fig"><img src="assets/exp5_period_overt_8b_f1.png" alt="Per-turn F1 vs layer, period-built vs native centers, overt split"><figcaption>Overt split (has an overtly harmful-looking turn).</figcaption></figure>
+    </div>
+    <div data-mv="acc" hidden>
+      <figure class="fig"><img src="assets/exp5_period_hidden_8b_acc.png" alt="Per-turn accuracy vs layer, period-built vs native centers, hidden split"><figcaption>Hidden split (no overtly harmful-looking turn).</figcaption></figure>
+      <figure class="fig"><img src="assets/exp5_period_overt_8b_acc.png" alt="Per-turn accuracy vs layer, period-built vs native centers, overt split"><figcaption>Overt split (has an overtly harmful-looking turn).</figcaption></figure>
+    </div></div>
 
   <div class="field"><div class="label">What we found</div>
     <ul class="find">
@@ -396,8 +498,14 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="field"><div class="label">What we measured, and where</div>
       <p>Same as the 8B pane, on Llama-3.1-70B (all-position activations at every 2nd of 81 layers). One figure per
         split; total n and period-having count per turn.</p>
-      <figure class="fig"><img src="assets/exp5_period_hidden_llama70b.png" alt="Per-turn accuracy vs layer, period-built vs native centers, hidden, 70B"><figcaption>Hidden split.</figcaption></figure>
-      <figure class="fig"><img src="assets/exp5_period_overt_llama70b.png" alt="Per-turn accuracy vs layer, period-built vs native centers, overt, 70B"><figcaption>Overt split.</figcaption></figure></div>
+      <div data-mv="f1">
+        <figure class="fig"><img src="assets/exp5_period_hidden_llama70b_f1.png" alt="Per-turn F1 vs layer, hidden, 70B"><figcaption>Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp5_period_overt_llama70b_f1.png" alt="Per-turn F1 vs layer, overt, 70B"><figcaption>Overt split.</figcaption></figure>
+      </div>
+      <div data-mv="acc" hidden>
+        <figure class="fig"><img src="assets/exp5_period_hidden_llama70b_acc.png" alt="Per-turn accuracy vs layer, hidden, 70B"><figcaption>Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp5_period_overt_llama70b_acc.png" alt="Per-turn accuracy vs layer, overt, 70B"><figcaption>Overt split.</figcaption></figure>
+      </div></div>
     <div class="field"><div class="label">What we found</div>
       <ul class="find">
         <li><b>Replicates 8B, at scale and full depth.</b> A period-built axis reads harm at <code>t_inst</code>
@@ -415,8 +523,14 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="field"><div class="label">What we measured, and where</div>
       <p>Same as the 8B pane, on Qwen2.5-72B (non-Llama ChatML template; all-position activations at every 2nd of
         81 layers). One figure per split.</p>
-      <figure class="fig"><img src="assets/exp5_period_hidden_qwen72b.png" alt="Per-turn accuracy vs layer, period-built vs native centers, hidden, 72B"><figcaption>Hidden split.</figcaption></figure>
-      <figure class="fig"><img src="assets/exp5_period_overt_qwen72b.png" alt="Per-turn accuracy vs layer, period-built vs native centers, overt, 72B"><figcaption>Overt split.</figcaption></figure></div>
+      <div data-mv="f1">
+        <figure class="fig"><img src="assets/exp5_period_hidden_qwen72b_f1.png" alt="Per-turn F1 vs layer, hidden, 72B"><figcaption>Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp5_period_overt_qwen72b_f1.png" alt="Per-turn F1 vs layer, overt, 72B"><figcaption>Overt split.</figcaption></figure>
+      </div>
+      <div data-mv="acc" hidden>
+        <figure class="fig"><img src="assets/exp5_period_hidden_qwen72b_acc.png" alt="Per-turn accuracy vs layer, hidden, 72B"><figcaption>Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp5_period_overt_qwen72b_acc.png" alt="Per-turn accuracy vs layer, overt, 72B"><figcaption>Overt split.</figcaption></figure>
+      </div></div>
     <div class="field"><div class="label">What we found</div>
       <ul class="find">
         <li><b>Replicates 8B in the usable range.</b> Through about layer 60, a period-built axis reads harm at
@@ -437,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function(){
 </template>
 
 <template id="control1">
-  <h2>Latent Guard read at the harm token vs the refusal token</h2>
+  <h2>Reproducing the original paper at the harm and refusal positions</h2>
   <div class="modelbar control">
     <button class="mbtn active" data-model="8b">Llama-3-8B</button>
     <button class="mbtn" data-model="8bcorrect">Llama-3-8B (correct)</button>
@@ -448,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <p class="tags"><span>Control 1</span><span>Single-turn</span><span>Llama-3-8B-Instruct</span><span>reproduction of Zhao et al. 2025, one change</span></p>
 
   <div class="field"><div class="label">What we did</div>
-    <p>We took Paper 1's Latent Guard, the cosine-difference harmfulness detector that classifies a prompt as
+    <p>We took the original paper's Latent Guard, the cosine-difference harmfulness detector that classifies a prompt as
       harmful when <code>&Delta; = cos(h, &mu;_harmful) &minus; cos(h, &mu;_harmless) &gt; 0</code> with cluster
       centers aggregated over all layers, and changed exactly one thing: we built and read the harm cluster
       centers at the post-instruction token (<code>t_post</code>) instead of the instruction token
@@ -457,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   <div class="field"><div class="label">What it checks</div>
     <p>Whether harmfulness is detectable at the post-instruction (refusal) position as well as at the
-      instruction position. That is, whether Paper 1's result that harmfulness is encoded at
+      instruction position. That is, whether the original paper's result that harmfulness is encoded at
       <code>t_inst</code> is genuinely specific to that position.</p></div>
 
   <div class="field"><div class="label">What we measured, and where</div>
@@ -496,7 +610,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="field"><div class="label">Conclusion</div>
     <p>Harmfulness is genuinely localized at the instruction token. The post-instruction position is a strictly
       weaker harm detector, and it collapses to zero when there is no refusal to lean on, which means its
-      apparent harm signal is refusal-dependent. Paper 1's <code>t_inst</code> localization holds, at the
+      apparent harm signal is refusal-dependent. The original paper's <code>t_inst</code> localization holds, at the
       detection level and on jailbreaks.</p></div>
   </div>
 
@@ -504,7 +618,7 @@ document.addEventListener('DOMContentLoaded', function(){
     <p class="tags"><span>Control 1</span><span>Single-turn</span><span>Llama-3-8B-Instruct</span><span>correct Llama-3 template</span><span>all 33 layers</span></p>
     <div class="field"><div class="label">What we did, and why</div>
       <p>The same Latent Guard on the same model as the first tab, with one fix: the correct Llama-3 chat
-        template. The first (<b>Llama-3-8B</b>) tab reproduces Paper 1 faithfully, but Paper 1's shipped harm
+        template. The first (<b>Llama-3-8B</b>) tab reproduces the original paper faithfully, but the original paper's shipped harm
         direction was built with the <b>Llama-2</b> template applied to a Llama-3 model, so its
         <code>t_inst</code> and <code>t_post</code> land on mismatched, partly out-of-distribution tokens. This
         tab rebuilds the detector with Llama-3's own template and fresh centers, changing nothing else, to see
@@ -539,13 +653,13 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
 
   <div class="modelpane" data-model="llama70b" hidden>
-    <p class="tags"><span>Control 1</span><span>Single-turn</span><span>Llama-3.1-70B-Instruct</span><span>Paper 1's method, Llama-3 template</span><span>all 81 layers</span></p>
+    <p class="tags"><span>Control 1</span><span>Single-turn</span><span>Llama-3.1-70B-Instruct</span><span>The original paper's method, Llama-3 template</span><span>all 81 layers</span></p>
     <div class="field"><div class="label">What we did</div>
-      <p>Paper 1's Latent Guard on Llama-3.1-70B: harm and harmless cluster centers from 100 advbench + 100
+      <p>The original paper's Latent Guard on Llama-3.1-70B: harm and harmless cluster centers from 100 advbench + 100
         alpaca prompts, cos-difference rule, read at the instruction token (<code>t_inst</code>, last content
-        token) and the post-instruction / generation point (<code>t_post</code>). Prompts use Paper 1's
+        token) and the post-instruction / generation point (<code>t_post</code>). Prompts use the original paper's
         <code>formatInp</code> Llama-3 template; centers built fresh (the paper's 7B/8B directions do not
-        transfer). Note: the Llama-3-8B tab is Paper 1's llama2-template <i>mirror</i>, so its positions sit on
+        transfer). Note: the Llama-3-8B tab is the original paper's llama2-template <i>mirror</i>, so its positions sit on
         different tokens; the two tabs are not perfectly apples-to-apple.</p></div>
     <div class="field"><div class="label">What we found</div>
       <div class="tablewrap">
@@ -567,7 +681,7 @@ document.addEventListener('DOMContentLoaded', function(){
         </table>
       </div>
       <ul class="find">
-        <li>At the instruction token, the harm signal reproduces Paper 1 on clean advbench prompts (100%) but is
+        <li>At the instruction token, the harm signal reproduces the original paper on clean advbench prompts (100%) but is
           narrow: it sits at or below chance on the reworded and jailbreak categories (Persuasion, GPTFuzzer,
           human-seed) and on sorry-bench (0%, whether or not the model complied). It detects advbench-phrased
           harm, not harm that survives rewording.</li>
@@ -594,12 +708,12 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
 
   <div class="modelpane" data-model="qwen72b" hidden>
-    <p class="tags"><span>Control 1</span><span>Single-turn</span><span>Qwen2.5-72B-Instruct</span><span>Paper 1's method, Qwen ChatML template</span><span>all 81 layers</span></p>
+    <p class="tags"><span>Control 1</span><span>Single-turn</span><span>Qwen2.5-72B-Instruct</span><span>The original paper's method, Qwen ChatML template</span><span>all 81 layers</span></p>
     <div class="field"><div class="label">What we did</div>
-      <p>Paper 1's Latent Guard on Qwen2.5-72B: harm and harmless cluster centers from 100 advbench + 100 alpaca
+      <p>The original paper's Latent Guard on Qwen2.5-72B: harm and harmless cluster centers from 100 advbench + 100 alpaca
         prompts, cos-difference rule, read at the instruction token (<code>t_inst</code>) and the
-        post-instruction / generation point (<code>t_post</code>). Prompts use Paper 1's <code>formatInp</code>
-        Qwen ChatML template (position anchor verified); centers built fresh. The Llama-3-8B tab is Paper 1's
+        post-instruction / generation point (<code>t_post</code>). Prompts use the original paper's <code>formatInp</code>
+        Qwen ChatML template (position anchor verified); centers built fresh. The Llama-3-8B tab is the original paper's
         llama2-template <i>mirror</i>, so its positions differ; the tabs are not perfectly apples-to-apple.</p></div>
     <div class="field"><div class="label">What we found</div>
       <div class="tablewrap">
@@ -622,7 +736,7 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
       <ul class="find">
         <li>Same picture as Llama-3.1-70B, on a different template. At the instruction token the harm signal
-          reproduces Paper 1 on clean advbench (100%) but is narrow: at or below chance on the reworded and
+          reproduces the original paper on clean advbench (100%) but is narrow: at or below chance on the reworded and
           jailbreak categories and on sorry-bench (0%, complied or refused).</li>
         <li>The generation point (t_post) recovers Template (97%) and human-seed (100%), but it is a
           prompt-summary position and is strongly entangled with refusal (about 99% when the model refuses vs
@@ -649,12 +763,12 @@ document.addEventListener('DOMContentLoaded', function(){
 </template>
 
 <template id="c1overall">
-  <h2>Latent Guard across templates and scales: where does harm read out?</h2>
+  <h2>Summarized results for Control 1's reproduction</h2>
   <p class="tags"><span>Control 1 (overall)</span><span>Single-turn</span><span>8B / 70B / 72B</span><span>correct vs mirror template</span><span>t_inst vs t_post</span></p>
 
   <div class="field"><div class="label">What this shows</div>
-    <p>Paper 1's single-turn Latent Guard (the cosine-difference detector) run across three models, two chat
-      templates (each model's <b>correct</b> template vs the llama2 <code>[INST]</code> <b>mirror</b> Paper 1
+    <p>The original paper's single-turn Latent Guard (the cosine-difference detector) run across three models, two chat
+      templates (each model's <b>correct</b> template vs the llama2 <code>[INST]</code> <b>mirror</b> the original paper
       shipped by default), and both read positions (instruction token <code>t_inst</code>, post-instruction
       token <code>t_post</code>). Accuracy is percent flagged at the &Delta; &gt; 0 threshold, all layers
       aggregated; harmful categories = recall, harmless = TNR. Sorted by position (all <code>t_inst</code>,
@@ -663,11 +777,11 @@ document.addEventListener('DOMContentLoaded', function(){
 
   <div class="field"><div class="label">Llama-3-8B</div>
     <div class="tablewrap"><table>
-      <caption>First row is Paper 1's <i>reported</i> Latent Guard (t_inst), which is itself a mirror-template
+      <caption>First row is the original paper's <i>reported</i> Latent Guard (t_inst), which is itself a mirror-template
         result. Our mirror row reproduces it. n/a where a value is not available for that row.</caption>
       <thead><tr><th>Position &middot; setup</th><th>Adv-suffix</th><th>Clean-HF</th><th>Persuasion</th><th>GPTFuzzer</th><th>Human-JB</th><th>Refused-HL</th><th>Accepted-HF</th></tr></thead>
       <tbody>
-        <tr><td>t_inst &middot; Paper-1 reported</td><td>91</td><td>n/a</td><td>65</td><td>100</td><td>n/a</td><td>78.5</td><td>59.3</td></tr>
+        <tr><td>t_inst &middot; the original paper reported</td><td>91</td><td>n/a</td><td>65</td><td>100</td><td>n/a</td><td>78.5</td><td>59.3</td></tr>
         <tr><td>t_inst &middot; correct (llama3)</td><td>n/a</td><td>100</td><td>0</td><td>47.7</td><td>50</td><td>100</td><td class="zero">0</td></tr>
         <tr class="ours"><td>t_inst &middot; mirror (llama2)</td><td>n/a</td><td>94</td><td>58</td><td>81</td><td>73.5</td><td>83.3</td><td>46.4</td></tr>
         <tr><td>t_post &middot; correct (llama3)</td><td>n/a</td><td>98</td><td>38</td><td>88.3</td><td>100</td><td>66.7</td><td>9.3</td></tr>
@@ -701,8 +815,8 @@ document.addEventListener('DOMContentLoaded', function(){
     <ul class="find">
       <li><b>Template kills t_inst.</b> With each model's correct template, the instruction token reads only
         surface harm (Clean-HF 100) and sits at chance or zero on the jailbreak categories (Persuasion 0,
-        Accepted-HF 0) at every scale. The mirror template Paper 1 shipped inflates it (Accepted-HF ~46 at 8B and
-        70B). So Paper 1's "harm localizes at <code>t_inst</code>" is largely a mirror-template artifact.</li>
+        Accepted-HF 0) at every scale. The mirror template the original paper shipped inflates it (Accepted-HF ~46 at 8B and
+        70B). So the original paper's "harm localizes at <code>t_inst</code>" is largely a mirror-template artifact.</li>
       <li><b>Scale builds t_post.</b> With the correct template, the refusal-independent harm signal at
         <code>t_post</code> (Accepted-HF, complied prompts) is near-absent at 8B (9.3%) and emerges with scale:
         59% at 70B, 66% at 72B.</li>
@@ -849,21 +963,25 @@ document.addEventListener('DOMContentLoaded', function(){
 </template>
 
 <template id="exp3">
-  <h2>Does context move the harm representation?</h2>
+  <h2>Cross-evaluating harm cluster centers in isolation vs in context</h2>
   <div class="modelbar experiment">
     <button class="mbtn active" data-model="8b">Llama-3-8B</button>
     <button class="mbtn" data-model="llama70b">Llama-3.1-70B</button>
     <button class="mbtn" data-model="qwen72b">Qwen2.5-72B</button>
     <button class="mbtn" data-model="8bmirror">Llama-3-8B (mirror)</button>
   </div>
+  <div class="metricbar">
+    <button class="metbtn active" data-metric="f1">F1</button>
+    <button class="metbtn" data-metric="acc">Accuracy</button>
+  </div>
   <div class="modelpane" data-model="8b">
   <p class="tags"><span>Experiment 3</span><span>Multi-turn (MHJ)</span><span>Llama-3-8B</span><span>instruction (t_inst) and post-instruction (t_post) positions</span><span>all 33 layers</span></p>
 
   <div class="field"><div class="label">What we did</div>
-    <p>For each user turn we build Paper 1's Latent-Guard cluster centers (a harmful center and a harmless
+    <p>For each user turn we build the original paper's Latent-Guard cluster centers (a harmful center and a harmless
       center) two ways: from the turn read on its own (iso) and from the same turn read inside its conversation
       (ctx), at every one of the model's 33 layers, and at two token positions: the instruction token (t_inst,
-      where Paper 1 localizes harmfulness) and the post-instruction token (t_post, which Paper 1 associates with
+      where the original paper localizes harmfulness) and the post-instruction token (t_post, which the original paper associates with
       refusal). We classify each turn with the cosine-difference rule (a turn is called harmful if it sits
       closer to the harmful center than the harmless one), and we apply each set of centers to both kinds of
       turn: iso-built centers score iso turns and also ctx turns, and ctx-built centers score ctx turns and also
@@ -872,7 +990,9 @@ document.addEventListener('DOMContentLoaded', function(){
       when it is harmful in context), so this compares positions, not two different quantities. We run it
       separately for the two splits (hidden = no turn ever looks harmful on its own; overt = at least one does),
       and we view the same results two ways: as a layer sweep faceted by turn (View A) and as a turn sweep
-      faceted by layer (View B).</p></div>
+      faceted by layer (View B). The toggle above switches the metric: <b>accuracy</b> = &frac12; &middot; (share
+      of harmful asks scored harmful + share of harmless asks scored harmless); <b>F1</b> = 2 &middot; precision
+      &middot; recall / (precision + recall), on the harmful class.</p></div>
 
   <div class="field"><div class="label">What it checks</div>
     <p>Whether the harm representation is the same object with and without context (does a center built in one
@@ -883,22 +1003,18 @@ document.addEventListener('DOMContentLoaded', function(){
     <p>Accuracy of the cosine-difference rule at every layer and turn, for the four combinations, at the
       instruction position (t_inst, solid) and the post-instruction position (t_post, dashed), per split. View A
       puts layer on the x-axis with one panel per turn; View B puts turn on the x-axis with one panel per layer.</p>
-    <figure class="fig">
-      <img src="assets/exp3_layer_hidden_8b.png" alt="View A, layer on x, one panel per turn, hidden split">
-      <figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption>
-    </figure>
-    <figure class="fig">
-      <img src="assets/exp3_layer_overt_8b.png" alt="View A, layer on x, one panel per turn, overt split">
-      <figcaption>View A. Overt split.</figcaption>
-    </figure>
-    <figure class="fig">
-      <img src="assets/exp3_turn_hidden_8b.png" alt="View B, turn on x, one panel per layer, hidden split">
-      <figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption>
-    </figure>
-    <figure class="fig">
-      <img src="assets/exp3_turn_overt_8b.png" alt="View B, turn on x, one panel per layer, overt split">
-      <figcaption>View B. Overt split.</figcaption>
-    </figure></div>
+    <div data-mv="f1">
+      <figure class="fig"><img src="assets/exp3_layer_hidden_8b_f1.png" alt="View A hidden"><figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption></figure>
+      <figure class="fig"><img src="assets/exp3_layer_overt_8b_f1.png" alt="View A overt"><figcaption>View A. Overt split.</figcaption></figure>
+      <figure class="fig"><img src="assets/exp3_turn_hidden_8b_f1.png" alt="View B hidden"><figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption></figure>
+      <figure class="fig"><img src="assets/exp3_turn_overt_8b_f1.png" alt="View B overt"><figcaption>View B. Overt split.</figcaption></figure>
+    </div>
+    <div data-mv="acc" hidden>
+      <figure class="fig"><img src="assets/exp3_layer_hidden_8b_acc.png" alt="View A hidden"><figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption></figure>
+      <figure class="fig"><img src="assets/exp3_layer_overt_8b_acc.png" alt="View A overt"><figcaption>View A. Overt split.</figcaption></figure>
+      <figure class="fig"><img src="assets/exp3_turn_hidden_8b_acc.png" alt="View B hidden"><figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption></figure>
+      <figure class="fig"><img src="assets/exp3_turn_overt_8b_acc.png" alt="View B overt"><figcaption>View B. Overt split.</figcaption></figure>
+    </div></div>
 
   <div class="field"><div class="label">What we found</div>
     <ul class="find">
@@ -928,7 +1044,7 @@ document.addEventListener('DOMContentLoaded', function(){
         turns and back), even though harm is highly contextual at the label level (Control 2). The axis stays
         put and is simply hard to read.</li>
       <li>The post-instruction advantage is mainly an overt-split and deep-turn effect. Is that the refusal
-        machinery Paper 1 describes, or something else? We do not know what that position encodes, so we do not
+        machinery the original paper describes, or something else? We do not know what that position encodes, so we do not
         call it refusal.</li>
       <li>The deep-turn post-instruction spikes are unexplained. At hidden turn 6 the post-instruction position
         separates harmful from benign at about 0.73 while the instruction position is at chance; those turns are
@@ -951,22 +1067,18 @@ document.addEventListener('DOMContentLoaded', function(){
       <p>Accuracy of the cosine-difference rule at every layer and turn for the four iso/ctx combinations, at the
         instruction position (solid) and the post-instruction position (dashed), per split. View A puts layer on
         the x-axis with one panel per turn; View B puts turn on the x-axis with one panel per layer.</p>
-      <figure class="fig">
-        <img src="assets/exp3_layer_hidden_llama70b.png" alt="View A, layer on x, one panel per turn, hidden split, Llama-3.1-70B">
-        <figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption>
-      </figure>
-      <figure class="fig">
-        <img src="assets/exp3_layer_overt_llama70b.png" alt="View A, layer on x, one panel per turn, overt split, Llama-3.1-70B">
-        <figcaption>View A. Overt split.</figcaption>
-      </figure>
-      <figure class="fig">
-        <img src="assets/exp3_turn_hidden_llama70b.png" alt="View B, turn on x, one panel per layer, hidden split, Llama-3.1-70B">
-        <figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption>
-      </figure>
-      <figure class="fig">
-        <img src="assets/exp3_turn_overt_llama70b.png" alt="View B, turn on x, one panel per layer, overt split, Llama-3.1-70B">
-        <figcaption>View B. Overt split.</figcaption>
-      </figure></div>
+      <div data-mv="f1">
+        <figure class="fig"><img src="assets/exp3_layer_hidden_llama70b_f1.png" alt="View A hidden 70B"><figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_layer_overt_llama70b_f1.png" alt="View A overt 70B"><figcaption>View A. Overt split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_hidden_llama70b_f1.png" alt="View B hidden 70B"><figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_overt_llama70b_f1.png" alt="View B overt 70B"><figcaption>View B. Overt split.</figcaption></figure>
+      </div>
+      <div data-mv="acc" hidden>
+        <figure class="fig"><img src="assets/exp3_layer_hidden_llama70b_acc.png" alt="View A hidden 70B"><figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_layer_overt_llama70b_acc.png" alt="View A overt 70B"><figcaption>View A. Overt split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_hidden_llama70b_acc.png" alt="View B hidden 70B"><figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_overt_llama70b_acc.png" alt="View B overt 70B"><figcaption>View B. Overt split.</figcaption></figure>
+      </div></div>
     <div class="field"><div class="label">What we found</div>
       <ul class="find">
         <li><b>iso and ctx are interchangeable wherever there is signal.</b> The four combinations are
@@ -989,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', function(){
         <li>As in Llama-3-8B, context does not relocate the harm axis even though harm is highly contextual at the
           label level (Control 2). The axis stays put and is simply hard to read.</li>
         <li>The post-instruction edge is again mainly an overt-split, opening-turn effect. Is that the refusal
-          machinery Paper 1 describes, or something else? We do not know what that position encodes, so we do not
+          machinery the original paper describes, or something else? We do not know what that position encodes, so we do not
           call it refusal.</li>
       </ul></div>
   </div>
@@ -1006,22 +1118,18 @@ document.addEventListener('DOMContentLoaded', function(){
       <p>Accuracy of the cosine-difference rule at every layer and turn for the four iso/ctx combinations, at the
         instruction position (solid) and the post-instruction position (dashed), per split. View A puts layer on
         the x-axis with one panel per turn; View B puts turn on the x-axis with one panel per layer.</p>
-      <figure class="fig">
-        <img src="assets/exp3_layer_hidden_qwen72b.png" alt="View A, layer on x, one panel per turn, hidden split, Qwen2.5-72B">
-        <figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption>
-      </figure>
-      <figure class="fig">
-        <img src="assets/exp3_layer_overt_qwen72b.png" alt="View A, layer on x, one panel per turn, overt split, Qwen2.5-72B">
-        <figcaption>View A. Overt split.</figcaption>
-      </figure>
-      <figure class="fig">
-        <img src="assets/exp3_turn_hidden_qwen72b.png" alt="View B, turn on x, one panel per layer, hidden split, Qwen2.5-72B">
-        <figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption>
-      </figure>
-      <figure class="fig">
-        <img src="assets/exp3_turn_overt_qwen72b.png" alt="View B, turn on x, one panel per layer, overt split, Qwen2.5-72B">
-        <figcaption>View B. Overt split.</figcaption>
-      </figure></div>
+      <div data-mv="f1">
+        <figure class="fig"><img src="assets/exp3_layer_hidden_qwen72b_f1.png" alt="View A hidden 72B"><figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_layer_overt_qwen72b_f1.png" alt="View A overt 72B"><figcaption>View A. Overt split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_hidden_qwen72b_f1.png" alt="View B hidden 72B"><figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_overt_qwen72b_f1.png" alt="View B overt 72B"><figcaption>View B. Overt split.</figcaption></figure>
+      </div>
+      <div data-mv="acc" hidden>
+        <figure class="fig"><img src="assets/exp3_layer_hidden_qwen72b_acc.png" alt="View A hidden 72B"><figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_layer_overt_qwen72b_acc.png" alt="View A overt 72B"><figcaption>View A. Overt split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_hidden_qwen72b_acc.png" alt="View B hidden 72B"><figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_overt_qwen72b_acc.png" alt="View B overt 72B"><figcaption>View B. Overt split.</figcaption></figure>
+      </div></div>
     <div class="field"><div class="label">What we found</div>
       <ul class="find">
         <li><b>iso and ctx are interchangeable wherever there is signal.</b> The four combinations are
@@ -1062,22 +1170,18 @@ document.addEventListener('DOMContentLoaded', function(){
       <p>Accuracy of the cosine-difference rule at every layer and turn for the four iso/ctx combinations, at the
         instruction (solid) and post-instruction (dashed) positions, per split. View A: layer on x, one panel per
         turn; View B: turn on x, one panel per layer.</p>
-      <figure class="fig">
-        <img src="assets/exp3_layer_hidden_8b_mirror.png" alt="View A, hidden, Llama-3-8B mirror template">
-        <figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption>
-      </figure>
-      <figure class="fig">
-        <img src="assets/exp3_layer_overt_8b_mirror.png" alt="View A, overt, Llama-3-8B mirror template">
-        <figcaption>View A. Overt split.</figcaption>
-      </figure>
-      <figure class="fig">
-        <img src="assets/exp3_turn_hidden_8b_mirror.png" alt="View B, hidden, Llama-3-8B mirror template">
-        <figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption>
-      </figure>
-      <figure class="fig">
-        <img src="assets/exp3_turn_overt_8b_mirror.png" alt="View B, overt, Llama-3-8B mirror template">
-        <figcaption>View B. Overt split.</figcaption>
-      </figure></div>
+      <div data-mv="f1">
+        <figure class="fig"><img src="assets/exp3_layer_hidden_8b_mirror_f1.png" alt="View A hidden mirror"><figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_layer_overt_8b_mirror_f1.png" alt="View A overt mirror"><figcaption>View A. Overt split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_hidden_8b_mirror_f1.png" alt="View B hidden mirror"><figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_overt_8b_mirror_f1.png" alt="View B overt mirror"><figcaption>View B. Overt split.</figcaption></figure>
+      </div>
+      <div data-mv="acc" hidden>
+        <figure class="fig"><img src="assets/exp3_layer_hidden_8b_mirror_acc.png" alt="View A hidden mirror"><figcaption>View A (layer on x, one panel per turn). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_layer_overt_8b_mirror_acc.png" alt="View A overt mirror"><figcaption>View A. Overt split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_hidden_8b_mirror_acc.png" alt="View B hidden mirror"><figcaption>View B (turn on x, one panel per layer). Hidden split.</figcaption></figure>
+        <figure class="fig"><img src="assets/exp3_turn_overt_8b_mirror_acc.png" alt="View B overt mirror"><figcaption>View B. Overt split.</figcaption></figure>
+      </div></div>
     <div class="field"><div class="label">What we found</div>
       <ul class="find">
         <li><b>The wrong template has essentially no effect here.</b> Mid-to-late-layer detector accuracy is within
