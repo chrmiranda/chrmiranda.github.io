@@ -159,6 +159,66 @@ document.addEventListener('DOMContentLoaded', function(){
   <main class="grid">
 
     <!-- CARDS: newest first. Add each new experiment's card at the TOP of this list; data-exp must match a <template> id below. -->
+    <button class="card" data-exp="exp13">
+      <span class="badge experiment">Experiment 13</span>
+      <h3 class="card-title">Does the multi-turn center reproduce single-turn Latent Guard?</h3>
+      <p class="card-sum">We apply our multi-turn harm center to the paper's single-turn Latent-Guard benchmark. It matches
+        on the harmless slice and is in the ballpark on template jailbreaks, but badly undershoots on reworded jailbreaks
+        and complied-harmful prompts, so it is not the same direction as single-turn Latent Guard.</p>
+      <span class="more">View experiment &rarr;</span>
+    </button>
+
+    <button class="card" data-exp="exp12">
+      <span class="badge experiment">Experiment 12</span>
+      <h3 class="card-title">Scoring every turn using cluster centers approximated from averaged hidden states in turns 1-5</h3>
+      <p class="card-sum">We pool all five turns into one cluster center. This cleans up the benign early turns, since they
+        are now in the center's benign class, but at the cost of a weaker harm read at the later turns.</p>
+      <span class="more">View experiment &rarr;</span>
+    </button>
+
+    <button class="card" data-exp="exp11">
+      <span class="badge experiment">Experiment 11</span>
+      <h3 class="card-title">Scoring every turn using cluster centers approximated from averaged hidden states in turns 3-5</h3>
+      <p class="card-sum">We pool turns 3, 4, and 5 into one cluster center and use it to judge every turn. This is the
+        strongest harm reader: folding in the onset turn lifts turn-3 detection without hurting the later turns, and the
+        benign-early-turn behavior is unchanged.</p>
+      <span class="more">View experiment &rarr;</span>
+    </button>
+
+    <button class="card" data-exp="exp10">
+      <span class="badge experiment">Experiment 10</span>
+      <h3 class="card-title">Scoring every turn using cluster centers approximated from averaged hidden states in turns 4-5</h3>
+      <p class="card-sum">We pool turns 4 and 5 into one cluster center and use it to judge every turn. It reads harm at the
+        later turns a touch more strongly than the turn-5 center, with the same over-flagging of benign early turns except
+        at the post-instruction later layers.</p>
+      <span class="more">View experiment &rarr;</span>
+    </button>
+
+    <button class="card" data-exp="exp9">
+      <span class="badge experiment">Experiment 9</span>
+      <h3 class="card-title">Scoring every turn using the turn-5 center</h3>
+      <p class="card-sum">We build one cluster center from turn 5 and use it to judge every turn. It reads harm at the
+        later turns well, but over-flags the benign early turns except at the post-instruction position's later layers.</p>
+      <span class="more">View experiment &rarr;</span>
+    </button>
+
+    <button class="card" data-exp="exp8">
+      <span class="badge experiment">Experiment 8</span>
+      <h3 class="card-title">Reading harm in each turn using the new dataset</h3>
+      <p class="card-sum">After each turn we build a cluster center and ask whether it can tell, at that turn, that the
+        conversation has become harmful. Harm becomes readable right as it enters and sharpens toward the payload.</p>
+      <span class="more">View experiment &rarr;</span>
+    </button>
+
+    <button class="card" data-exp="exp7">
+      <span class="badge experiment">Experiment 7</span>
+      <h3 class="card-title">How many samples do we need to approximate cluster centers?</h3>
+      <p class="card-sum">Latent Guard builds each cluster center from 100 examples. We rebuild them from 5, 10, 20,
+        and 50 examples and track how much the accuracy moves. The average settles within a few dozen examples, but the
+        run-to-run spread stays wide past 50.</p>
+      <span class="more">View experiment &rarr;</span>
+    </button>
+
     <button class="card" data-exp="exp6">
       <span class="badge experiment">Experiment 6</span>
       <h3 class="card-title">How stable is Control 1's result?</h3>
@@ -235,6 +295,195 @@ document.addEventListener('DOMContentLoaded', function(){
 </div>
 
 <!-- ===================== FULL WRITEUPS (hidden until a card is clicked) ===================== -->
+<template id="exp13">
+  <h2>Does the multi-turn center reproduce single-turn Latent Guard?</h2>
+  <p class="tags"><span>Experiment 13</span><span>transfer check</span><span>Llama-3-8B</span><span>multi-turn center on Latent-Guard slices</span><span>all-layer-mean, instruction token</span><span>30 resamples</span></p>
+
+  <div class="field"><div class="label">What we did</div>
+    <p>We take our multi-turn harm center (built from turns 3-5) and score it, unchanged, on the four single-turn slices
+      from the paper's Latent-Guard benchmark, using the same metric and prompt subsets as our earlier reproduction. This
+      asks whether the direction learned from multi-turn conversations is the same one the paper's single-turn detector
+      uses.</p></div>
+
+  <div class="field"><div class="label">What we found</div>
+    <div class="tablewrap">
+      <table>
+        <caption>Classification accuracy (percent) at the instruction token, all-layer-mean cos-diff. The "our centers"
+          column is the mean over 30 resampled center draws, with the min and max in parentheses.</caption>
+        <thead><tr><th>slice</th><th>reported</th><th>reproduced (Exp 6)</th><th>our centers (multi-turn)</th></tr></thead>
+        <tbody>
+          <tr><td>Persuasion</td><td class="best">65.0</td><td>62 (54 to 72)</td><td>30 (2 to 88)</td></tr>
+          <tr><td>Template (GPTFuzzer)</td><td class="best">100.0</td><td>96 (93 to 98)</td><td>76 (23 to 98)</td></tr>
+          <tr><td>Refused HL</td><td class="best">78.5</td><td>68 (50 to 83)</td><td>77 (33 to 92)</td></tr>
+          <tr><td>Accepted HF</td><td class="best">59.3</td><td>55 (38 to 66)</td><td>7 (0 to 26)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Our multi-turn center matches the paper on the harmless slice (Refused-HL, 77 vs 78.5) and gets in the ballpark on
+      template jailbreaks (76 vs 96), but it badly undershoots on persuasion jailbreaks (30 vs 62) and complied-harmful
+      prompts (7 vs 55): it mostly fails to flag reworded jailbreaks and single-turn requests the model complied with. On
+      plainly-harmful versus plainly-harmless prompts it does transfer, separating them at about 0.9 at the best layer.</p></div>
+
+  <div class="field"><div class="label">Conclusion</div>
+    <p>The multi-turn hidden-harm direction reads clean single-turn harm, but it is not the same direction as single-turn
+      Latent Guard: it undershoots badly on jailbreaks and complied-harmful prompts. The multi-turn setup captures a
+      related but distinct notion of harm.</p></div>
+</template>
+
+<template id="exp12">
+  <h2>Scoring every turn using cluster centers approximated from averaged hidden states in turns 1-5</h2>
+  <p class="tags"><span>Experiment 12</span><span>Multi-turn (gold)</span><span>Llama-3-8B</span><span>pooled all-turns center</span><span>scored on all turns</span><span>all 33 layers</span></p>
+
+  <div class="field"><div class="label">What we did</div>
+    <p>We pool the activations from all five turns into a single cluster center, then use it to judge every turn against
+      the same harm ground truth. This is the same as Experiment 11 but with the two benign early turns folded in as
+      well.</p></div>
+
+  <div class="field"><div class="label">What we found</div>
+    <figure class="fig"><img src="assets/exp12_singlecenter_layers.png" alt="Pooled all-turns center scored on all five turns, accuracy vs layer at the instruction and post-instruction positions"><figcaption>One subplot per turn (1-5), accuracy vs layer, at the instruction token (solid) and the token just after it (dashed); the dotted line is the majority baseline, 1.0 on turns 1-2 since those turns are all benign.</figcaption></figure>
+    <p>The benign early turns (1-2) are now read correctly as benign at almost every layer, about 0.93-0.99, because those
+      turns are part of the center's benign side. But the harm read at the later turns drops, about 0.83, 0.86, and 0.85
+      at turns 3, 4, and 5, below Experiment 11's 0.86 / 0.94 / 0.97. Folding the benign early turns in pulls the harmless
+      center toward them, trading harm sensitivity for cleaner early-turn behavior.</p></div>
+
+  <div class="field"><div class="label">Conclusion</div>
+    <p>Including the benign early turns in the center fixes the early-turn over-flagging but weakens harm detection at the
+      payload turns. There is a tradeoff between leaving benign turns alone and reading harm strongly; no single fixed
+      center does both best.</p></div>
+</template>
+
+<template id="exp11">
+  <h2>Scoring every turn using cluster centers approximated from averaged hidden states in turns 3-5</h2>
+  <p class="tags"><span>Experiment 11</span><span>Multi-turn (gold)</span><span>Llama-3-8B</span><span>pooled turns 3-5 center</span><span>scored on all turns</span><span>all 33 layers</span></p>
+
+  <div class="field"><div class="label">What we did</div>
+    <p>We pool the activations from turns 3, 4, and 5 into a single cluster center, then use it to judge every turn
+      against the same harm ground truth.</p></div>
+
+  <div class="field"><div class="label">What we found</div>
+    <figure class="fig"><img src="assets/exp11_singlecenter_layers.png" alt="Pooled turns 3-5 center scored on all five turns, accuracy vs layer at the instruction and post-instruction positions"><figcaption>One subplot per turn (1-5), accuracy vs layer, at the instruction token (solid) and the token just after it (dashed); the dotted line is the majority baseline, 1.0 on turns 1-2 since those turns are all benign.</figcaption></figure>
+    <p>On the harmful turns this is the strongest center we tested, about 0.86, 0.94, and 0.97 at the best layer for turns
+      3, 4, and 5. Folding the onset turn (3) into the center lifts turn-3 detection, from about 0.79 with the turns 4-5
+      center to 0.86, without weakening the later turns. The benign early turns (1-2) behave the same as before: kept
+      benign only at the post-instruction token's later layers, and over-flagged at the instruction token and most other
+      layers.</p></div>
+
+  <div class="field"><div class="label">Conclusion</div>
+    <p>Building the center from the onset turn through the payload gives the best harm read across all harmful turns,
+      including the hard onset turn, but it does not fix the early-turn over-flagging, which stays confined to the
+      post-instruction late-layer regime.</p></div>
+</template>
+
+<template id="exp10">
+  <h2>Scoring every turn using cluster centers approximated from averaged hidden states in turns 4-5</h2>
+  <p class="tags"><span>Experiment 10</span><span>Multi-turn (gold)</span><span>Llama-3-8B</span><span>pooled turns 4-5 center</span><span>scored on all turns</span><span>all 33 layers</span></p>
+
+  <div class="field"><div class="label">What we did</div>
+    <p>We pool the activations from turns 4 and 5 into a single cluster center, then use it to judge every turn against the
+      same harm ground truth. As before, a fixed center should read harm at the later turns and leave the benign early
+      turns alone.</p></div>
+
+  <div class="field"><div class="label">What we found</div>
+    <figure class="fig"><img src="assets/exp10_singlecenter_layers.png" alt="Pooled turns 4-5 center scored on all five turns, accuracy vs layer at the instruction and post-instruction positions"><figcaption>One subplot per turn (1-5), accuracy vs layer, at the instruction token (solid) and the token just after it (dashed); the dotted line is the majority baseline, 1.0 on turns 1-2 since those turns are all benign.</figcaption></figure>
+    <p>On the harmful turns (3-5) it reads harm well, about 0.79, 0.90, and 0.95 at the best layer, a touch stronger at the
+      payload than the turn-5 center. The benign early turns (1-2) behave the same as before: kept benign only at the
+      post-instruction token's later layers, and over-flagged at the instruction token and most other layers. Pooling
+      turns 4 and 5 barely changes the picture versus either turn alone, since the two turns are similar.</p></div>
+
+  <div class="field"><div class="label">Conclusion</div>
+    <p>Pooling the two payload turns gives a slightly stronger harm read at the later turns but does not change the
+      early-turn behavior. The fixed center still leaves benign early turns alone only in the post-instruction late-layer
+      regime.</p></div>
+</template>
+
+<template id="exp9">
+  <h2>Scoring every turn using the turn-5 center</h2>
+  <p class="tags"><span>Experiment 9</span><span>Multi-turn (gold)</span><span>Llama-3-8B</span><span>single turn-5 center</span><span>scored on all turns</span><span>all 33 layers</span></p>
+
+  <div class="field"><div class="label">What we did</div>
+    <p>We take the single cluster center built after turn 5 and use it to judge every turn against the same harm ground
+      truth. Because the center is fixed, it applies to all turns, including the benign early ones, which a good harm
+      center should leave alone.</p></div>
+
+  <div class="field"><div class="label">What we found</div>
+    <figure class="fig"><img src="assets/exp9_singlecenter_layers.png" alt="Turn-5 center scored on all five turns, accuracy vs layer at the instruction and post-instruction positions"><figcaption>One subplot per turn (1-5), accuracy vs layer, at the instruction token (solid) and the token just after it (dashed); the dotted line is the majority baseline, which is 1.0 on turns 1-2 since those turns are all benign.</figcaption></figure>
+    <p>On the harmful turns (3-5) the turn-5 center reads harm well, about 0.80, 0.87, and 0.89 at the best layer. On the
+      benign early turns (1-2) it depends on where you read: at the post-instruction token's later layers it correctly
+      keeps them benign, but at the instruction token and most other layers it over-flags them as harmful. So the fixed
+      center works across all turns only in that one regime.</p></div>
+
+  <div class="field"><div class="label">Conclusion</div>
+    <p>A center from a single late turn does detect harm at the later turns, but it is not uniformly safe on the earlier
+      benign ones. The harm direction partly fires on the topically-related but still-benign early turns, except at the
+      post-instruction token's later layers.</p></div>
+</template>
+
+<template id="exp8">
+  <h2>Reading harm in each turn using the new dataset</h2>
+  <p class="tags"><span>Experiment 8</span><span>Multi-turn (gold)</span><span>Llama-3-8B</span><span>per-turn cluster centers</span><span>10 held-out convos</span><span>all 33 layers</span></p>
+
+  <div class="field"><div class="label">What we did</div>
+    <p>After each user turn we build a cluster center from the conversation up to that point, and use it to judge whether
+      that turn is harmful. A turn counts as harmful once the conversation reaches the point where harm begins (its
+      trajectory turn); everything before that is benign. Each turn is scored by its own center, and we measure accuracy
+      against this ground truth across all layers, at both the instruction token and the token just after it, testing on
+      conversations held out from building the centers. The first two turns are benign in every conversation, so a center
+      can only be built from turn 3 onward.</p></div>
+
+  <div class="field"><div class="label">What we found</div>
+    <figure class="fig"><img src="assets/exp8_perturn_layers.png" alt="Per-turn accuracy vs layer at the instruction and post-instruction positions, turns 3 to 5"><figcaption>One subplot per turn, accuracy vs layer, at the instruction token (solid) and the token just after it (dashed); the dotted line is the majority baseline.</figcaption></figure>
+    <p>Harm becomes readable exactly when it enters and grows clearer as the conversation proceeds. At the best layer,
+      accuracy is about 0.81 at the onset turn, 0.93 at the next, and 0.89 at the payload, against a coin-flip baseline
+      near 0.5. The onset turn is the hardest to read, since the harm is only just emerging, and the later turns are the
+      easiest. The signal is strongest in the middle layers, and the two token positions read it about equally.</p></div>
+
+  <div class="field"><div class="label">Conclusion</div>
+    <p>A cluster center built from the conversation so far can detect harm turn by turn, and its accuracy tracks where the
+      harm actually is: weakest the moment harm first appears, strongest once the request is fully harmful.</p></div>
+</template>
+
+<template id="exp7">
+  <h2>How many samples do we need to approximate cluster centers?</h2>
+  <p class="tags"><span>Experiment 7</span><span>Single-turn</span><span>Llama-3-8B-Instruct</span><span>follow-up to Experiment 6</span><span>5 / 10 / 20 / 50 examples, 30 redraws</span></p>
+
+  <div class="field"><div class="label">What we did, and why</div>
+    <p>Latent Guard scores a prompt by comparing it to two cluster centers, one built from harmful examples and one from
+      harmless; the paper builds each from 100. We asked how many examples those centers actually need. We rebuilt them
+      from 5, 10, 20, and 50 examples per side, redrew the examples 30 times at each size, and tracked accuracy on the
+      paper's four benchmark slices, reporting the average and the range across redraws.</p>
+    <p>Accuracy here is the share of prompts the detector labels correctly, read at the instruction token, using the same
+      center recipe reproduced in Experiment 6.</p></div>
+
+  <div class="field"><div class="label">What we found</div>
+    <div class="tablewrap">
+      <table>
+        <caption>Classification accuracy (percent) at the &Delta; &gt; 0 threshold, by number of examples per center. Each
+          cell is the mean over 30 redraws, with the min and max in parentheses.</caption>
+        <thead><tr><th>benchmark slice</th><th>paper</th><th>n=5</th><th>n=10</th><th>n=20</th><th>n=50</th></tr></thead>
+        <tbody>
+          <tr><td>Persuasion jailbreaks</td><td class="best">65.0</td><td>70.9 (40 to 98)</td><td>68.1 (44 to 95)</td><td>64.3 (40 to 88)</td><td>62.6 (49 to 74)</td></tr>
+          <tr><td>Template jailbreaks</td><td class="best">100.0</td><td>92.0 (66 to 98)</td><td>93.0 (72 to 98)</td><td>94.6 (90 to 98)</td><td>94.8 (89 to 98)</td></tr>
+          <tr><td>Over-refusal (benign refused)</td><td class="best">78.5</td><td>42.2 (0 to 92)</td><td>51.4 (0 to 92)</td><td>55.3 (17 to 83)</td><td>65.0 (25 to 83)</td></tr>
+          <tr><td>Complied-harmful</td><td class="best">59.3</td><td>63.5 (31 to 91)</td><td>59.0 (21 to 92)</td><td>55.6 (33 to 80)</td><td>54.1 (32 to 70)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="find">
+      <li>The range narrows as examples are added, but it stays wide longer than one might expect. Even at 50 examples per
+        side, two of the four slices still move by about &plusmn;15 points depending on which examples were drawn.</li>
+      <li>The persuasion and complied-harmful slices land near the reported numbers even with very few examples on average,
+        though with a wide spread.</li>
+      <li>The over-refusal slice keeps climbing through 50 without settling. Its benchmark is only about a dozen items, so
+        each measurement is coarse on its own.</li>
+      <li>The template-jailbreak slice holds near 95 at every count, a little below the reported 100.</li>
+    </ul></div>
+
+  <div class="field"><div class="label">Conclusion</div>
+    <p>The cluster centers are more sample-hungry than a single reported number implies. A few dozen examples give a
+      reasonable average, but the run-to-run spread stays meaningful past 50, so any single small sample can land well
+      above or below its own average. Worth accounting for when deciding how much data new cluster centers need.</p></div>
+</template>
+
 <template id="exp6">
   <h2>How stable is Control 1's result?</h2>
   <p class="tags"><span>Experiment 6</span><span>Single-turn</span><span>Llama-3-8B-Instruct</span><span>follow-up to Control 1</span><span>30 resampled center draws</span></p>
